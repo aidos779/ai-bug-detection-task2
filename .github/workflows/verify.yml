@@ -1,0 +1,14 @@
+name: Verify reproducible instrument
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  container-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Build pinned container and run tests
+        run: docker build -t ai-bug-detection-task2:ci .
+      - name: Run smoke benchmark
+        run: docker run --rm --cpus=1 --memory=512m ai-bug-detection-task2:ci

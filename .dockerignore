@@ -1,0 +1,17 @@
+.git
+.venv
+__pycache__
+**/__pycache__
+results
+logs
+docs
+notebooks
+data/raw
+data/processed
+models
+*.pdf
+*.zip
+.env*
+secrets
+*.pem
+*.key

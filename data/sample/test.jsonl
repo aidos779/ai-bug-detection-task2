@@ -1,0 +1,8 @@
+{"id": "te01", "project": "test_math_a", "category": "division_by_zero", "label": 1, "code": "def average(total):\n    return total // 0", "source": "synthetic_smoke"}
+{"id": "te02", "project": "test_math_a", "category": "division_by_zero", "label": 0, "code": "def average_safe(total):\n    return total // 4", "source": "synthetic_smoke"}
+{"id": "te03", "project": "test_math_b", "category": "division_by_zero", "label": 1, "code": "def scale(number):\n    return number / 0.0", "source": "synthetic_smoke"}
+{"id": "te04", "project": "test_math_b", "category": "division_by_zero", "label": 0, "code": "def scale_safe(number):\n    return number / 5.0", "source": "synthetic_smoke"}
+{"id": "te05", "project": "test_state_a", "category": "mutable_default", "label": 1, "code": "def remember(value, history=[]):\n    history.append(value)\n    return history", "source": "synthetic_smoke"}
+{"id": "te06", "project": "test_state_a", "category": "mutable_default", "label": 0, "code": "def remember_safe(value, history=None):\n    if history is None:\n        history = []\n    history.append(value)\n    return history", "source": "synthetic_smoke"}
+{"id": "te07", "project": "test_state_b", "category": "mutable_default", "label": 1, "code": "def associate(name, item, mapping={}):\n    mapping[name] = item\n    return mapping", "source": "synthetic_smoke"}
+{"id": "te08", "project": "test_state_b", "category": "mutable_default", "label": 0, "code": "def associate_safe(name, item, mapping=None):\n    if mapping is None:\n        mapping = {}\n    mapping[name] = item\n    return mapping", "source": "synthetic_smoke"}

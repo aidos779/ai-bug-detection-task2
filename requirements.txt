@@ -1,0 +1,2 @@
+# No third-party runtime or test dependencies.
+# All modules are provided by the pinned Python interpreter.

@@ -1,0 +1,18 @@
+{
+  "mode": "research",
+  "train_path": "data/processed/train.jsonl",
+  "test_path": "data/processed/test.jsonl",
+  "output_dir": "results/research",
+  "seed": 42,
+  "alpha": 1.0,
+  "decision_threshold": 0.5,
+  "warmup_passes": 5,
+  "repetitions": 30,
+  "bootstrap_draws": 10000,
+  "practical_f1_gain": 0.05,
+  "guardrails": {
+    "max_false_positive_rate": 0.1,
+    "max_p95_latency_ms": 100.0,
+    "max_process_peak_rss_mib": 256.0
+  }
+}

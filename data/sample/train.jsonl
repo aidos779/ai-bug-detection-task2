@@ -1,0 +1,8 @@
+{"id": "tr01", "project": "train_math_a", "category": "division_by_zero", "label": 1, "code": "def ratio(value):\n    return value / 0", "source": "synthetic_smoke"}
+{"id": "tr02", "project": "train_math_a", "category": "division_by_zero", "label": 0, "code": "def ratio_safe(value):\n    return value / 2", "source": "synthetic_smoke"}
+{"id": "tr03", "project": "train_math_b", "category": "division_by_zero", "label": 1, "code": "def remainder(value):\n    return value % 0", "source": "synthetic_smoke"}
+{"id": "tr04", "project": "train_math_b", "category": "division_by_zero", "label": 0, "code": "def remainder_safe(value):\n    return value % 3", "source": "synthetic_smoke"}
+{"id": "tr05", "project": "train_state_a", "category": "mutable_default", "label": 1, "code": "def collect(item, items=[]):\n    items.append(item)\n    return items", "source": "synthetic_smoke"}
+{"id": "tr06", "project": "train_state_a", "category": "mutable_default", "label": 0, "code": "def collect_safe(item, items=None):\n    if items is None:\n        items = []\n    items.append(item)\n    return items", "source": "synthetic_smoke"}
+{"id": "tr07", "project": "train_state_b", "category": "mutable_default", "label": 1, "code": "def cache(key, value, store={}):\n    store[key] = value\n    return store", "source": "synthetic_smoke"}
+{"id": "tr08", "project": "train_state_b", "category": "mutable_default", "label": 0, "code": "def cache_safe(key, value, store=None):\n    if store is None:\n        store = {}\n    store[key] = value\n    return store", "source": "synthetic_smoke"}

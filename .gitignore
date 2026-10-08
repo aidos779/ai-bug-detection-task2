@@ -1,0 +1,46 @@
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+# Notebooks
+.ipynb_checkpoints/
+# Run outputs
+results/
+logs/
+*.log
+*.tmp
+*.bak
+# Datasets and model weights
+data/raw/
+data/processed/
+models/
+*.parquet
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.pt
+*.pth
+*.onnx
+*.h5
+*.hdf5
+*.bin
+# Credentials
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
