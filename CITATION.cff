@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this pilot instrument, please cite this repository."
+type: software
+title: "AI Tools for Software Bug Detection A Reproducible Pilot Benchmark"
+authors:
+  - family-names: Baltabay
+    given-names: Aidos
+  - family-names: Bissen
+    given-names: Yerkebulan
+version: 1.0.0
+date-released: 2026-10-08
+url: "https://github.com/aidos779/ai-bug-detection-task2"
+license: MIT
