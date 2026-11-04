@@ -18,9 +18,14 @@ logs/
 *.tmp
 *.bak
 # Datasets and model weights
-data/raw/
-data/processed/
-models/
+# Publish only the audited Task 3 log, small CSV summaries and text NB model.
+/data/raw/*
+!/data/raw/test_run.jsonl
+/data/processed/*
+!/data/processed/metrics_summary.csv
+!/data/processed/fixture_categories.csv
+/models/*
+!/models/task3_nb.json
 *.parquet
 *.npy
 *.npz
