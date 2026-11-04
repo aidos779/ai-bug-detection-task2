@@ -1,0 +1,5 @@
+method,category,n,tp,fp,tn,fn,precision,recall,f1,false_positive_rate
+multinomial_nb,division_by_zero,4,2,2,0,0,0.5,1.0,0.6666666666666666,1.0
+multinomial_nb,mutable_default,4,2,0,2,0,1.0,1.0,1.0,0.0
+static_rules,division_by_zero,4,2,0,2,0,1.0,1.0,1.0,0.0
+static_rules,mutable_default,4,2,0,2,0,1.0,1.0,1.0,0.0

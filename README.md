@@ -1,231 +1,96 @@
 # AI Tools for Software Bug Detection
 
-**Authors:** Baltabay Aidos and Bissen Yerkebulan  
-**Course deliverable:** Task 2 - Methodology Passport Card and Research Repository  
-**Status:** Runnable pilot instrument; real-code data collection is planned  
-**License:** MIT
+Baltabay Aidos and Bissen Yerkebulan · Digital Engineering · Tasks 2 and 3
 
-## Overview
+This project compares fixed Python AST rules with a supervised multinomial Naive Bayes classifier for division by zero and unintended state sharing through mutable default arguments. Task 3 measures scoring time on 12 functions from the Task 2 repository. Eight labelled synthetic test fixtures check the quality calculations. Independently reviewed real-code labels are still needed to evaluate the registered F1 hypothesis.
 
-This repository develops the comparative-effectiveness question from our Task 1
-review, *The Effectiveness of AI Tools in Software Bug Detection*. It provides a
-small, fully executable quantitative pilot for Python defect detection. A learned
-multinomial Naive Bayes (NB) lexical classifier is compared with a transparent,
-non-AI abstract-syntax-tree (AST) rule detector. The two target defect families are
-division by zero and unintended state sharing through mutable default arguments.
+[Executed notebook](notebooks/01_data_analysis.ipynb) · [Standalone Task 3 report (PDF)](reports/task3_report.pdf) · [Mathematical model](docs/domain_model.md)
 
-The NB model is a modest supervised-learning baseline. It is not an LLM,
-LineVul, BugLab, or a reproduction of any reviewed tool. Its small scope enables
-the complete measurement pipeline to run without model downloads or an API key.
-It cannot establish the effectiveness of all AI tools.
+## Results & Discussion
 
-### Research Question
+On 3 November 2026, each method scored the same 12 unlabelled functions from two files in one repository. The functions span 73–6,244 bytes. Each method made 360 measured calls on these functions across 30 passes. The faster median for Naive Bayes describes the cost of scoring this fixed workload on one host.
 
-On the same project-separated, independently labelled Python snippets, does a
-learned lexical classifier improve defect-detection F1 relative to fixed AST
-rules, while meeting the registered resource and false-positive limits?
+Repository functions | Baseline · AST rules | Proposed · Naive Bayes
+--- | ---: | ---:
+Median latency, ms (p25–p75) | 0.1073 (0.0580–0.1726) | 0.0151 (0.0109–0.0245)
+95% bootstrap CI for median, ms | 0.1000–0.1081 | 0.0149–0.0154
+p95 / p99 latency, ms | 1.2150 / 1.2916 | 0.1513 / 0.1603
+Detector throughput, snippets/s (95% CI) | 5,017 (4,856–5,162) | 35,866 (34,237–37,108)
+Measured errors / attempts | 0 / 360 | 0 / 360
 
-For population performance within this bounded setting, **H0:** F1(NB) -
-F1(static) <= 0; **H1:** F1(NB) - F1(static) > 0. The primary statistic is the
-absolute F1 difference. A gain of 0.05 is the separately registered practical
-threshold. These are planned hypotheses; the included fixtures do not test them.
+**Figure 1.** Each point is a function's median time. Caps give pointwise 95% bootstrap intervals across the 30 passes. Both methods took longer on the largest function than on the smallest. Source length measures the input size of this offline detector. Syntax and token composition also differ among functions.
 
-## System Requirements
+![Detector latency in milliseconds by function size in UTF-8 bytes, with a 95% confidence interval for each function](reports/figures/fig1_latency_vs_load.png)
 
-- Recommended environment: Docker Engine or Docker Desktop with Linux containers.
-- Image: Python **3.12.10**, Debian bookworm, immutable multi-architecture digest
-  recorded in `Dockerfile`; use the same image architecture and host for comparisons.
-- Suggested Docker allocation for this pilot: one CPU and 512 MiB RAM; no GPU.
-- Offline execution after the base image is pulled. No external packages, network
-  calls, source-code execution, notebook server, or model weights are required.
-- The local alternative is Python 3.12 on macOS or Linux. The container is the
-  reference environment; other interpreter patches are compatibility checks.
-- Classification outputs are deterministic. Wall-clock timings and process memory
-  are observations and will vary across runs and machines.
+**Figure 2.** The middle half of AST calls spans 0.0580–0.1726 ms and the middle half of NB calls spans 0.0109–0.0245 ms. Whiskers reach the last observations within 1.5 IQRs of the quartiles. Open symbols show the remaining calls. Separate capped marks show pass-bootstrap 95% intervals for the pooled medians.
 
-## Quickstart Guide
+![Distributions of individual AST and Naive Bayes scoring times on unlabelled functions](reports/figures/fig2_distribution_boxplot.png)
 
-Clone, build, and run in **three commands** (a POSIX shell):
+### Quality check on the eight labelled fixtures
 
-```bash
-git clone https://github.com/aidos779/ai-bug-detection-task2.git ai-bug-detection-task2
-docker build -t ai-bug-detection-task2:1.0 ai-bug-detection-task2
-docker run --rm --cpus=1 --memory=512m -v "$PWD/ai-bug-detection-task2/results:/app/results" ai-bug-detection-task2:1.0
-```
+Metric | Baseline · AST rules | Proposed · Naive Bayes
+--- | ---: | ---:
+TP / FP / TN / FN | 4 / 0 / 4 / 0 | 4 / 2 / 2 / 0
+Precision / recall / F1 | 1.000 / 1.000 / 1.000 | 0.667 / 1.000 / 0.800
+False-positive rate | 0 / 4 = 0.00 | 2 / 4 = 0.50
 
-The image build runs the complete unit-test suite. The run trains NB, warms up
-both methods, measures paired predictions and latency, and creates:
+NB flagged both negative division-by-zero fixtures. Both detectors classified all four mutable-default fixtures as expected. Each snippet contributes once to these counts. The F1 difference (NB minus AST) was −0.200. Resampling four synthetic project groups gave a 95% interval of [−0.333, 0.000], with 10,000 of 10,000 paired draws valid. This reproduces the Task 2 smoke check. F1 and FPR are undefined for the 12 unlabelled functions. [Per-family counts](data/processed/fixture_categories.csv)
 
-- `results/smoke/summary.json`: quality metrics, delta F1, project-bootstrap
-  interval, guardrails, environment details, and SHA-256 provenance hashes.
-- `results/smoke/predictions.csv`: one paired prediction record per test snippet.
-- `results/smoke/latencies.csv`: every timed detector call in milliseconds.
+### Measurement and guardrails
 
-If the checkout already exists, use only the last two commands and point the build
-at that directory. Docker creates the mounted results directory if necessary.
+- The collector trained NB on the eight original training fixtures using α = 1 and threshold 0.5. Five warm-up passes produced 200 calls. Thirty benchmark passes produced 1,200 calls across both corpora, including 480 on the test fixtures. Seed 42 controls the order of inputs and methods. Both methods receive the same source text, which is parsed or tokenized without execution.
+- Each timer surrounds one detector call. Training, logging and file reads are outside it. Throughput is completed calls divided by the total time inside the scorer. The CSV includes mean, sample SD, median, p95 and p99. A 10,000-draw bootstrap resamples whole passes, keeping the input mix and the pairing. Flagged outliers stay in the estimates. [Full CSV](data/processed/metrics_summary.csv)
+- The collection used the original Debian image, CPython 3.12.10 and Linux/arm64 on an Apple M3 host. Docker enforced one CPU of quota and a 512 MiB memory limit. Fitting took 0.089 ms. The shared collector's peak RSS through the final call was 20.83 MiB (limit 256 MiB). This covers training and buffered events. The separate notebook process runs later. The guest advertised a 1 ms clock resolution. A 50,000-pair probe observed increments as small as 41 ns. Times are observations on this virtualized host.
+- Each method met the 100 ms p95 limit on both workloads. All 1,400 attempted calls succeeded. On the fixtures, NB exceeded the 0.10 FPR limit. The full research success criterion remains unevaluated.
 
-### Local alternative and tests
+## Reproduce the Task 3 analysis
 
-From the repository root, no installation step is needed:
+From the repository root on macOS or Linux, use Python 3.12 (tested with 3.12.10). The installed analysis packages are separate from the standard-library Task 2 benchmark.
 
 ```bash
-python3 -m unittest discover -s tests -v
-python3 src/benchmark.py --config configs/smoke.json
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-task3.txt
+python -m unittest discover -s tests -v
+python -m src.collect_task3 --verify-model
+jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=180 notebooks/01_data_analysis.ipynb
 ```
 
-Configuration paths are resolved against the repository root, independently of
-the shell's current directory. Any invalid input or measurement failure returns
-a nonzero exit code. `requirements.txt` documents the absence of third-party
-packages; the Python patch and operating-system image are pinned in `Dockerfile`.
+The notebook starts a new Python kernel, validates the archived [JSONL](data/raw/test_run.jsonl) and regenerates both CSVs and both figure pairs. To inspect the saved outputs interactively, open it with `jupyter lab notebooks/01_data_analysis.ipynb`. The same calculations are available separately via `python -m src.process_data` and `python -m src.visualize`.
 
-## Repository Structure
+On the delivered run, all 13 tests passed, including checks for incomplete logs, warm-up exclusion, timing units, failed calls and repeat-level resampling. Reloading the saved model reproduced 700 NB scores and decisions over 20 distinct inputs. The archived log has SHA-256 `ef7a7fb5a6208d53768159fba07af7f2e5d20891e969d851bc27ac46b18a4685`.
 
-```text
-ai-bug-detection-task2/
-├── README.md
-├── LICENSE
-├── CITATION.cff
-├── Dockerfile
-├── requirements.txt
-├── .gitignore
-├── .dockerignore
-├── configs/
-│   ├── smoke.json
-│   └── research.json
-├── data/
-│   └── sample/
-│       ├── README.md
-│       ├── train.jsonl
-│       └── test.jsonl
-├── src/
-│   ├── __init__.py
-│   └── benchmark.py
-├── tests/
-│   └── test_benchmark.py
-├── docs/
-│   ├── methodology_passport.md
-│   ├── methodology_passport.pdf
-│   ├── data_protocol.md
-│   ├── reproducibility.md
-│   ├── verification.md
-│   └── references.bib
-├── notebooks/
-│   └── README.md
-└── .github/workflows/
-    └── verify.yml
-```
+### Collect another timed run
 
-`results/`, private/raw data, processed research corpora, caches, credentials,
-and model binaries are ignored. Only the two tiny fixture files are versioned.
-The PDF is the coursework document, not a dataset or a model binary.
+The collector selects six functions by size rank from each of the two frozen source files. The JSONL header records line ranges, names, byte counts, SHA-256 hashes, parameters and environment. Each call records its phase, input, method, elapsed nanoseconds, prediction and status. A final record gives completion counts and process RSS. The small [JSON model](models/task3_nb.json) stores the learned log priors and token likelihoods. Model verification reloads it and reproduces its scores and decisions.
 
-## Planned Benchmarks
-
-| Benchmark | Data | Purpose | Measurements | Interpretation |
-|---|---|---|---|---|
-| W6 smoke check | 8 training and 8 test fixtures; 4 disjoint test fixture groups | Verify instrument and paths | Confusion matrices, F1, latency, RSS, output hashes | Pipeline check only |
-| W7 primary pilot | >=50 training and >=100 real reviewed test snippets; >=10 held-out source projects | Compare the two registered methods | F1 difference and paired project-bootstrap 95% interval | Bounded empirical evidence |
-| W7 category analysis | Same held-out data, divided into two defect families | Identify where performance differs | Per-category precision, recall, F1 | Descriptive secondary analysis |
-| Resource repeat | Same fixed data and host, 30 timed repetitions after 5 warm-up passes | Measure computational cost | p50/p95 latency, detector-only throughput, whole-process peak RSS | Hardware-specific observations |
-
-Actual research results are **not collected yet**. The fixture ground truth has
-four positives and four negatives. Its expected static-rule F1 is 1.00 and NB F1
-is 0.80 (delta = -0.20). Those deliberately small, template-like examples only
-verify measurement. They must not be reported as evidence that one tool is better
-on real software. The JSON result explicitly says
-`pipeline_validated_only_no_research_conclusion`.
-
-## Experimental Design and Measurement
-
-The independent variable is the detection method. Category is a stratification
-factor rather than a randomized treatment. F1 is primary; precision, recall,
-false-positive rate, latency, throughput and memory are dependent measures. Both
-methods receive the identical held-out source text and ground-truth labels.
-
-NB uses regex-token occurrence counts, training-only vocabulary, empirical class
-priors, Laplace smoothing alpha=1.0 and threshold=0.5. Unseen tokens are ignored.
-The static detector flags literal numeric zero divisors (`/`, `//`, `%`) and
-list/dict/set literals in positional or keyword-only defaults. It does not reason
-about reachability, variable values, mutability intent, or interprocedural flow.
-Neither implementation sees test labels during prediction.
-
-The instrument rejects overlapping train/test project IDs, snippet IDs, and
-identical parsed ASTs. This detects exact structural duplicates, not all renamed
-or semantically equivalent clones. Near-duplicate review is required before the
-research dataset is frozen. Projects, preprocessing, thresholds, image, host,
-single-process execution and repetition counts are kept fixed for each comparison.
-Timing order is randomized with seed 42. Training time is reported separately.
-
-F1 = 2TP / (2TP + FP + FN); precision = TP / (TP + FP); recall = TP / (TP + FN);
-FPR = FP / (FP + TN). Undefined precision/recall/F1 are assigned 0; undefined FPR
-is null and cannot pass its guardrail. The paired bootstrap samples whole test
-projects and uses the same sampled rows for both methods. Single-class resamples
-are excluded, with the retained draw count reported. The planned research run
-uses 10,000 draws; smoke mode uses 2,000.
-
-Registered guardrails are FPR <= 0.10 and p95 detector latency <= 100 ms for each
-method, whole-benchmark peak resident memory <= 256 MiB, and zero measurement
-errors. Peak RSS covers the shared process including training and resampling;
-it is not a per-model memory comparison. Detector throughput excludes data
-loading, training, output writing and bootstrap analysis.
-
-An interval wholly above zero supports H1 within the registered scope. Practical
-success additionally requires observed delta F1 >=0.05 and every guardrail to
-pass. Other intervals leave superiority unestablished; they do not prove equal
-performance. Smoke mode never issues a research conclusion, even with a positive
-delta or passing guardrails.
-
-## Running the Registered Research Configuration
-
-Prepare `data/processed/train.jsonl` and `data/processed/test.jsonl` using
-[`docs/data_protocol.md`](docs/data_protocol.md). Verify licensing, labels,
-project separation, near-duplicate removal and the frozen data manifest before
-measurement. The loader requires both classes, at least 50 training records,
-100 test records, and 10 test projects in research mode. Each record must use
-`source: real_reviewed`, contain `provenance` and `label_rationale`, and follow
-the sample schema. These checks verify structure; they cannot establish that a
-human review actually occurred or that labels are correct.
+Run these commands from the repository root. New measurements go to the ignored `results/task3-repeat/` directory so the archived observations remain available for comparison.
 
 ```bash
-docker run --rm --cpus=1 --memory=512m -v "$PWD/data/processed:/app/data/processed:ro" -v "$PWD/results:/app/results" ai-bug-detection-task2:1.0 python src/benchmark.py --config configs/research.json
+task3_image=$(awk '/^FROM / {print $2; exit}' Dockerfile)
+docker pull "$task3_image"
+task3_image_id=$(docker image inspect --format '{{.Id}}' "$task3_image")
+mkdir -p results/task3-repeat
+docker run --rm --network none --user "$(id -u):$(id -g)" --cpus=1 --memory=512m --memory-swap=512m \
+  -e PYTHONHASHSEED=42 -e PYTHONDONTWRITEBYTECODE=1 -e TASK3_IMAGE_ID="$task3_image_id" \
+  -v "$PWD:/app:ro" -v "$PWD/results/task3-repeat:/out" -w /app "$task3_image" \
+  python -m src.collect_task3 --raw /out/test_run.jsonl --model /out/model.json
+python -m src.collect_task3 --verify-model --raw results/task3-repeat/test_run.jsonl --model results/task3-repeat/model.json
+python -m src.process_data --raw results/task3-repeat/test_run.jsonl --out results/task3-repeat
+python -m src.visualize --raw results/task3-repeat/test_run.jsonl --output-dir results/task3-repeat/figures
 ```
 
-The two methods run offline on the same source snippets. This command intentionally
-fails while the real research data is absent. Do not relabel the fixtures as real
-data or tune the classifier on the final test set. Larger data, additional defect
-families, thresholds or methods require a revised protocol before a new test.
+## Task 2 instrument and registered research protocol
 
-## Reproducibility and Git Workflow
+The original smoke benchmark runs with the Python standard library. From the repository root, run `python3 src/benchmark.py --config configs/smoke.json` or use the original container workflow.
 
-See [`docs/reproducibility.md`](docs/reproducibility.md) for the audit checklist and
-team workflow, and [`docs/verification.md`](docs/verification.md) for the actual
-local/container checks. Commit code, protocol and tiny sample data; keep outputs
-outside version control. For a real run, archive the exact config, data hashes,
-code commit, machine details and result files together.
-
-## References
-
-The literature context and bibliography continue Task 1, which reviewed ten
-selected studies from 2018-2024. Relevant primary sources include
-[BugLab](https://proceedings.neurips.cc/paper/2021/hash/ea96efc03b9a050d895110db8c4af057-Abstract.html)
-and the [Real-Vul evaluation](https://arxiv.org/abs/2407.03093). The model follows
-the multinomial count-and-smoothing formulation in the
-[Naive Bayes documentation](https://scikit-learn.org/stable/modules/naive_bayes.html#multinomial-naive-bayes);
-scikit-learn is not imported. The rules use the
-[Python AST API](https://docs.python.org/3.12/library/ast.html).
-Full Task 1 bibliography: [`docs/references.bib`](docs/references.bib).
-
-## Citation and License
-
-```bibtex
-@software{baltabay_bissen_2026_bug_detection_pilot,
-  author = {Baltabay, Aidos and Bissen, Yerkebulan},
-  title = {AI Tools for Software Bug Detection: A Reproducible Pilot Benchmark},
-  year = {2026},
-  version = {1.0.0},
-  url = {https://github.com/aidos779/ai-bug-detection-task2}
-}
+```bash
+docker build -t ai-bug-detection-task2:1.0 .
+docker run --rm --cpus=1 --memory=512m -v "$PWD/results:/app/results" ai-bug-detection-task2:1.0
 ```
 
-Our code, documentation and handmade smoke fixtures are released under the MIT
-license. Third-party research data retains its original license and attribution.
+The registered comparison needs at least 50 reviewed training snippets and 100 reviewed test snippets from at least 10 held-out test projects. The two authors must independently label both defect families, reconcile disagreements, document provenance and remove cross-split duplicates. After freezing that dataset, run `python3 src/benchmark.py --config configs/research.json`. The primary endpoint is the paired difference in F1. The protocol requires a positive lower 95% bound, an absolute gain of at least 0.05 and compliance with the guardrails for practical success. [Methodology passport](docs/methodology_passport.pdf) · [Data protocol](docs/data_protocol.md)
+
+## Sources and licence
+
+The detectors, fixtures and unlabelled inputs come from the original MIT-licensed project. The implementation, Task 2 reproducibility notes, source bibliography and citation metadata remain available with the project. [Frozen Task 2 revision](https://github.com/aidos779/ai-bug-detection-task2/tree/374dea01bd5983d9081e94f8a8dccb47168ab94a) · [Task 2 reproducibility](docs/reproducibility.md) · [References](docs/references.bib) · [Citation](CITATION.cff) · [MIT licence](LICENSE)
